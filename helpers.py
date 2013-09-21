@@ -15,13 +15,18 @@ class stuff:
 			res[ints[i].InterestId] = 1
 		return res
 
-	def BuildInterests(self, DeptId, Parents): # Builds interests up for an entire Department in to a dict
+	def BuildInterests(self, DeptId): # Builds interests up for an entire Department in to a dict
 		interests = {}
-		if Parents:  # Selecting whether to query the parent or child table
-			people = self.db.ParentPeople.filter(self.db.ParentPeople.DepartmentId==DeptId)
-		else:
-			people = self.db.FresherPeople.filter(self.db.FresherPeople.DepartmentId==DeptId) 
+		# For the parents
+		people = self.db.ParentPeople.filter(self.db.ParentPeople.DepartmentId==DeptId)
+ 
 		for person in people:
 			interests[person.PersonId] = self.GetInterests(person.PersonId)
-		print interests
+
+		# For the freshers
+		people = self.db.FresherPeople.filter(self.db.FresherPeople.DepartmentId==DeptId)
+
+		for person in people:
+			interests[person.PersonId] = self.GetInterests(person.PersonId)		
+
 		return interests

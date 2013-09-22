@@ -4,9 +4,9 @@ import copy
 def AreTheyThere(haystack, needle):
 	for item in haystack:
 		if needle in item:
-			print needle, 'already in'
+			# print needle, 'already in'
 			return True
-	print needle, 'not in here'
+	# print needle, 'not in here'
 	return False
 
 class stuff:
@@ -15,6 +15,13 @@ class stuff:
 		self.db = db # This is an SQLSoup class (database connection) If crap string, then things will break.
 		#db.PersonInterests.filter(db.PersonInterests.PersonId==14769)
 		self.Interests = {}
+
+	def returnFreshers(self, DeptId):
+		freshers = self.db.FresherPeople.filter(self.db.FresherPeople.DepartmentId==DeptId)
+		ids = []
+		for f in freshers:
+			ids.append(f.PersonId)
+		return ids
 
 	def GetInterests(self, PeopleId): # Gets interests for a particular department
 		res = numpy.zeros(33) # We have 32 interests, but there's an offset of one
@@ -36,24 +43,39 @@ class stuff:
 
 		for person in people:
 			Cinterests[person.PersonId] = self.GetInterests(person.PersonId)		
-		print len(Cinterests), len(Pinterests)
+
 		self.Interests = copy.deepcopy(Pinterests)
-		print len(Cinterests), len(Pinterests)
+
 		self.Interests.update(Cinterests)
-		print len(Cinterests), len(Pinterests)
-		print len(self.Interests)
+
 
 		return Pinterests, Cinterests
 
 	def StartFamilies(self, DeptId): #This function works on the assumtion that there are no 'dud' parents. Data cleaned by the wonderful @lsproc
 		parents = self.db.ParentPeople.filter(self.db.ParentPeople.DepartmentId==DeptId)
-		start = []
+		start = {}
 		spouseless = 0
 		for p in parents:
 			if not AreTheyThere(start, p.PersonId):
-				start.append((p.PersonId, p.ChosenSpouse))
-			if p.ChosenSpouse == None:
-				print 'no spouse'
-				spouseless += 1
-		print spouseless
+				if p.ChosenSpouse is not None:
+					start[(p.PersonId, p.ChosenSpouse)] = [] # Ie each family has an empty list of children to start off with
+				else:
+					# print 'no spouse'
+					spouseless += 1
+		print 'spouseless: ', spouseless
 		return start
+
+	# def CalcFamInterests(self, parents, children):
+	# 	print parents[0], parents[1]
+	# 	print self.Interests[parents[0]], self.Interests[parents[1]]
+		
+	# 	return combined
+
+	def CalcSimilarity(self, parents, children, fresher):
+		print parents
+		combined = numpy.add(self.Interests[parents[0]], self.Interests[parents[1]])
+		for child in children:
+			combined = numpy.add(combined, self.Interests[child])
+		# combined = numpy.divide(combined, 2 + len(children))
+		return numpy.dot(combined, self.Interests[fresher])
+		

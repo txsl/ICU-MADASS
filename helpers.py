@@ -26,7 +26,7 @@ class stuff:
 	def GetInterests(self, PeopleId): # Gets interests for a particular department
 		res = numpy.zeros(33) # We have 32 interests, but there's an offset of one
 		ints = self.db.PersonInterests.filter(self.db.PersonInterests.PersonId==PeopleId)
-		for i in range(ints.count()/2):
+		for i in range(ints.count()):
 			res[ints[i].InterestId] = 1
 		return res
 
@@ -54,16 +54,18 @@ class stuff:
 	def StartFamilies(self, DeptId): #This function works on the assumtion that there are no 'dud' parents. Data cleaned by the wonderful @lsproc
 		parents = self.db.ParentPeople.filter(self.db.ParentPeople.DepartmentId==DeptId)
 		start = {}
+		fam_list = []
 		spouseless = 0
 		for p in parents:
 			if not AreTheyThere(start, p.PersonId):
 				if p.ChosenSpouse is not None:
 					start[(p.PersonId, p.ChosenSpouse)] = [] # Ie each family has an empty list of children to start off with
+					fam_list.append((p.PersonId, p.ChosenSpouse))
 				else:
 					# print 'no spouse'
 					spouseless += 1
 		print 'spouseless: ', spouseless
-		return start
+		return start, fam_list
 
 	# def CalcFamInterests(self, parents, children):
 	# 	print parents[0], parents[1]
@@ -72,7 +74,7 @@ class stuff:
 	# 	return combined
 
 	def CalcSimilarity(self, parents, children, fresher):
-		print parents
+		# print parents
 		combined = numpy.add(self.Interests[parents[0]], self.Interests[parents[1]])
 		for child in children:
 			combined = numpy.add(combined, self.Interests[child])

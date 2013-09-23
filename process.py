@@ -69,8 +69,13 @@ for rents, children in fams.iteritems():
 
 print toPrint
 
+header = ['parent 1', 'parent 2']
+for i in range(1, int(maxFamSize) + 1):
+	header.append('child ' + str(i))
+
 with open('output.csv', 'wb+') as csvfile:
 	writer = csv.writer(csvfile)
+	writer.writerow(header)
 	for line in toPrint:
 		writer.writerow(line)
 

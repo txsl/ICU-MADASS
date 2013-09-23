@@ -4,6 +4,7 @@ from helpers import *
 from collections import OrderedDict
 import math
 import pickle
+import csv
 
 work = stuff(db)
 
@@ -24,8 +25,6 @@ print len(unallocatedFreshers), len(fams), len(unallocatedFreshers) / (len(fams)
 maxFamSize = math.ceil(len(unallocatedFreshers) / (len(fams)))
 
 print 'Max Family Size is', maxFamSize
-
-exit
 
 while unallocatedFreshers:
 	scores = {}
@@ -60,3 +59,20 @@ while unallocatedFreshers:
 
 # print scores
 print fams
+
+# convert fams to a list form for csv printing
+
+toPrint = []
+
+for rents, children in fams.iteritems():
+	toPrint.append(list(rents) + children)
+
+print toPrint
+
+with open('output.csv', 'wb+') as csvfile:
+	writer = csv.writer(csvfile)
+	for line in toPrint:
+		writer.writerow(line)
+
+
+exit('All done!')

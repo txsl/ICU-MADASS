@@ -151,10 +151,10 @@ class stuff:
 
 	def CalcSimilarity(self, parents, children, fresher):
 		# print parents
-		combined = numpy.add(self.Interests[parents[0]], self.Interests[parents[1]])
+		combined = numpy.logical_or(self.Interests[parents[0]], self.Interests[parents[1]])
 		for child in children:
-			combined = numpy.add(combined, self.Interests[child])
-		combined = numpy.divide(combined, 2 + len(children))
+			combined = numpy.logical_or(combined, self.Interests[child])
+		# combined = numpy.divide(combined, 2 + len(children))
 		return numpy.dot(combined, self.Interests[fresher])
 
 	def ReturnDepts(self):

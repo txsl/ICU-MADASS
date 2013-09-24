@@ -69,6 +69,7 @@ def makeBabies(DeptId,  DeptName):
 	for i in range(1, int(maxFamSize) + 1):
 		header.append('child ' + str(i))
 
+	DeptName = DeptName.split(" ")
 	fname = ''
 	for l in DeptName:
 		fname = fname + l

@@ -75,11 +75,12 @@ def makeBabies(DeptId,  DeptName):
 		fname = fname + l
 	fname = fname + '.csv'
 
-	with open(fname, 'wb+') as csvfile:
+	with open('output/' + fname, 'wb+') as csvfile:
 		writer = csv.writer(csvfile)
 		writer.writerow(header)
 		for line in toPrint:
 			writer.writerow(line)
+
 
 def AreTheyThere(haystack, needle):
 	for item in haystack:

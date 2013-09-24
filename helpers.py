@@ -36,15 +36,21 @@ def makeBabies(DeptId,  DeptName):
 
 		famId = allocated[0][0]
 		fresherId = allocated[0][1]
+		score = allocated[1]
 
-		print allocated
-
+		if score == 0:
+			print 'score is 0 so finding small families'
+			famId = findSmallestFam(fams)
+			# print famId
+			# exit()
+	
 		fams[famId].append(fresherId)
 
 		unallocatedFreshers.remove(fresherId)
 
 		print len(fams[famId]), maxFamSize
-		if len(fams[famId]) == maxFamSize:
+		if len(fams[famId]) >= maxFamSize:
+			print familiesWithSpace
 			familiesWithSpace.remove(famId)
 			print 'removing family'
 
@@ -81,6 +87,17 @@ def makeBabies(DeptId,  DeptName):
 		for line in toPrint:
 			writer.writerow(line)
 
+
+def findSmallestFam(fams):
+	size = 10000 # We're never going to have a family this big (I hope)!
+	smallRents = None
+	print fams
+	for rents, childs in fams.iteritems():
+		if len(childs) < size:
+			print 'smallest family is', len(childs)
+			smallRents = rents
+			size = len(childs)
+	return smallRents
 
 def AreTheyThere(haystack, needle):
 	for item in haystack:

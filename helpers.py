@@ -200,6 +200,13 @@ class stuff:
 		# combined = numpy.divide(combined, 2 + len(children))
 		return numpy.dot(combined, self.Interests[fresher])
 
+		## Below is some of Fabian's experimentation with taking between the vectors
+		# com_norm = numpy.linalg.norm(combined)
+		# ch_norm = numpy.linalg.norm(self.Interests[fresher])
+		# dotproduct = numpy.dot(combined, self.Interests[fresher])
+		# import math
+		# return math.pi-math.acos(dotproduct/(ch_norm*com_norm))
+
 	def ReturnDepts(self):
 		depts = self.db.Departments.all()
 		r = []

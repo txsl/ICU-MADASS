@@ -67,13 +67,15 @@ def makeBabies(DeptId,  DeptName):
 	toPrint = []
 
 	for rents, children in fams.iteritems():
-		toPrint.append(list(rents) + children)
+		rentlist = list(rents)
+		for c in children:
+			toPrint.append([c] + rentlist)
 
 	print toPrint
 
-	header = ['parent 1', 'parent 2']
-	for i in range(1, int(maxFamSize) + 1):
-		header.append('child ' + str(i))
+	header = ['child', 'parent 1', 'parent 2']
+	# for i in range(1, int(maxFamSize) + 1):
+	# 	header.append('child ' + str(i))
 
 	DeptName = DeptName.split(" ")
 	fname = ''
@@ -87,6 +89,28 @@ def makeBabies(DeptId,  DeptName):
 		for line in toPrint:
 			writer.writerow(line)
 
+def printParents():
+	work = stuff(db)
+	depts = work.ReturnDepts()
+	print depts
+	for d in depts:
+		pointless, fams = work.StartFamilies(d[0])
+		toPrint = []
+		for f in fams:
+			toPrint.append(f)
+		DeptName = d[1].split(" ")
+		fname = ''
+		for l in DeptName:
+			fname = fname + l
+		fname = fname + '.csv'
+
+		header = ['parent 1', 'parent 2']
+
+		with open('parents/' + fname, 'wb+') as csvfile:
+			writer = csv.writer(csvfile)
+			writer.writerow(header)
+			for line in toPrint:
+				writer.writerow(line)
 
 def findSmallestFam(fams):
 	size = 10000 # We're never going to have a family this big (I hope)!

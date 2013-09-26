@@ -145,11 +145,36 @@ class stuff:
 			ids.append(f.PersonId)
 		return ids
 
-	def GetInterests(self, PeopleId): # Gets interests for a particular department
-		res = numpy.zeros(33) # We have 32 interests, but there's an offset of one
+	def GetInterests(self, PeopleId, Chem): # Gets interests for a particular department
+		baseInt = 33
+		extraWeighting = 10 # How many 'interests' are we giving these external ones?
+		extraOptions = 6
+
+		res = numpy.zeros(baseInt) # We have 32 interests, but there's an offset of one
+		if Chem:
+			res = numpy.zeros(baseInt + (extraOptions * extraWeighting))
 		ints = self.db.PersonInterests.filter(self.db.PersonInterests.PersonId==PeopleId)
 		for i in range(ints.count()):
 			res[ints[i].InterestId] = 1
+		
+		if Chem:
+			try:
+				anc = self.db.PersonExternalData.filter(self.db.PersonExternalData.PersonId==PeopleId)
+				print PeopleId
+				print anc[0].DataValue
+				anc = anc[0].DataValue
+				distrib = {
+							'MPC': 0,
+							'MEDBIO': extraWeighting,
+							'CHEMENG': extraWeighting*2,
+							'LANG': extraWeighting*3,
+							'HUMANITIES': extraWeighting*4,
+							'': extraWeighting*5,
+				}
+				res[(baseInt + distrib[anc]):(baseInt + distrib[anc] + extraWeighting)] = 1
+				print res
+			except IndexError:
+				print PeopleId, "doesn't have an entry in the External Data Table"
 		return res
 
 	def BuildInterests(self, DeptId): # Builds interests up for an entire Department in to a dict, but tupled to split between parents and children (makes it easier later)
@@ -158,13 +183,18 @@ class stuff:
 		people = self.db.ParentPeople.filter(self.db.ParentPeople.DepartmentId==DeptId)
  
 		for person in people:
-			Pinterests[person.PersonId] = self.GetInterests(person.PersonId)
-
+			if DeptId == 8:
+				Pinterests[person.PersonId] = self.GetInterests(person.PersonId, True)
+			else:
+				Pinterests[person.PersonId] = self.GetInterests(person.PersonId, False)
 		# For the freshers
 		people = self.db.FresherPeople.filter(self.db.FresherPeople.DepartmentId==DeptId)
 
 		for person in people:
-			Cinterests[person.PersonId] = self.GetInterests(person.PersonId)		
+			if DeptId == 8:
+				Cinterests[person.PersonId] = self.GetInterests(person.PersonId, True)		
+			else:
+				Cinterests[person.PersonId] = self.GetInterests(person.PersonId, False)
 
 		self.Interests = copy.deepcopy(Pinterests)
 

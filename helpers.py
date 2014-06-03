@@ -7,7 +7,7 @@ import math
 import pickle
 import csv
 
-def makeBabies(DeptId,  DeptName):
+def makeBabies(DeptId, DeptName, analysis=False):
 
 	work = stuff(db)
 
@@ -16,11 +16,11 @@ def makeBabies(DeptId,  DeptName):
 	unallocatedFreshers = work.returnFreshers(DeptId)
 	fams, familiesWithSpace = work.StartFamilies(DeptId)
 
-	print fams
-	print len(unallocatedFreshers), len(fams), len(unallocatedFreshers) / (len(fams))
+	# print fams
+	# print len(unallocatedFreshers), len(fams), len(unallocatedFreshers) / (len(fams))
 	maxFamSize = math.ceil(len(unallocatedFreshers) / (len(fams)))
 
-	print 'Max Family Size is', maxFamSize
+	print 'Max Family size is', maxFamSize
 
 	while unallocatedFreshers:
 		scores = {}
@@ -60,8 +60,15 @@ def makeBabies(DeptId,  DeptName):
 		# 	order.append(key)
 
 	# print scores
-	print fams
+	# print fams
 
+	if analysis:
+
+
+	print_families_to_file(fams, DeptName)
+
+
+def print_families_to_file(fams, DeptName):
 	# convert fams to a list form for csv printing
 
 	toPrint = []
@@ -160,8 +167,8 @@ class stuff:
 		if Chem:
 			try:
 				anc = self.db.PersonExternalData.filter(self.db.PersonExternalData.PersonId==PeopleId)
-				print PeopleId
-				print anc[0].DataValue
+				# print PeopleId
+				# print anc[0].DataValue
 				anc = anc[0].DataValue
 				distrib = {
 							'MPC': 0,
@@ -172,7 +179,7 @@ class stuff:
 							'': extraWeighting*5,
 				}
 				res[(baseInt + distrib[anc]):(baseInt + distrib[anc] + extraWeighting)] = 1
-				print res
+				# print res
 			except IndexError:
 				print PeopleId, "doesn't have an entry in the External Data Table"
 		return res

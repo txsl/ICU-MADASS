@@ -6,95 +6,125 @@ from collections import OrderedDict
 import math
 import pickle
 import csv
-
-def makeBabies(DeptId, DeptName, analysis=False):
-
-	work = stuff(db)
-
-	work.BuildInterests(DeptId)
-
-	unallocatedFreshers = work.returnFreshers(DeptId)
-	fams, familiesWithSpace = work.StartFamilies(DeptId)
-
-	# print fams
-	# print len(unallocatedFreshers), len(fams), len(unallocatedFreshers) / (len(fams))
-	maxFamSize = math.ceil(len(unallocatedFreshers) / (len(fams)))
-
-	print 'Max Family size is', maxFamSize
-
-	while unallocatedFreshers:
-		scores = {}
-
-		for fam in familiesWithSpace:
-			for fresh in unallocatedFreshers:
-				score = work.CalcSimilarity(fam, fams[fam], fresh)
-				scores[(fam, fresh)] = score
-
-		scores = OrderedDict(sorted(scores.items(), key=lambda t: t[1])) # Let's order them, so we can match the best score
-
-		allocated = scores.popitem()
-
-		famId = allocated[0][0]
-		fresherId = allocated[0][1]
-		score = allocated[1]
-
-		if score == 0:
-			print 'score is 0 so finding small families'
-			famId = findSmallestFam(fams)
-			# print famId
-			# exit()
-	
-		fams[famId].append(fresherId)
-
-		unallocatedFreshers.remove(fresherId)
-
-		print len(fams[famId]), maxFamSize
-		if len(fams[famId]) >= maxFamSize:
-			print familiesWithSpace
-			familiesWithSpace.remove(famId)
-			print 'removing family'
+import shelve
+import matplotlib.pyplot as plt
 
 
-		# order = []
-		# for key, var in scores:
-		# 	order.append(key)
+class babyMaker:
 
-	# print scores
-	# print fams
+	def __init__(self, DeptId, DeptName):
+		self.DeptId = DeptId
+		self.DeptName = DeptName
+		self.CamelName = DeptName.replace(' ', '')
 
-	if analysis:
+		self.work = stuff(db)
+
+	def makeBabies(self):
+
+		self.work.BuildInterests(self.DeptId)
+
+		unallocatedFreshers = self.work.returnFreshers(self.DeptId)
+		fams, familiesWithSpace = self.work.StartFamilies(self.DeptId)
+
+		# print fams
+		# print len(unallocatedFreshers), len(fams), len(unallocatedFreshers) / (len(fams))
+		maxFamSize = math.ceil(len(unallocatedFreshers) / (len(fams)))
+
+		print 'Matching {pars} pairs of parents with {childs} children.\nMax Family size is {famsize}'.format(pars=len(fams), childs=len(unallocatedFreshers), famsize=maxFamSize)
+
+		while unallocatedFreshers:
+			scores = {}
+
+			for fam in familiesWithSpace:
+				for fresh in unallocatedFreshers:
+					score = self.work.CalcSimilarity(fam, fams[fam], fresh)
+					scores[(fam, fresh)] = score
+
+			scores = OrderedDict(sorted(scores.items(), key=lambda t: t[1])) # Let's order them, so we can match the best score
+
+			allocated = scores.popitem()
+
+			famId = allocated[0][0]
+			fresherId = allocated[0][1]
+			score = allocated[1]
+
+			if score == 0:
+				print 'score is 0 so finding small families'
+				famId = findSmallestFam(fams)
+		
+			fams[famId].append(fresherId)
+
+			unallocatedFreshers.remove(fresherId)
+
+			print len(fams[famId]), maxFamSize
+			if len(fams[famId]) >= maxFamSize:
+				print familiesWithSpace
+				familiesWithSpace.remove(famId)
+				print 'removing family'
 
 
-	print_families_to_file(fams, DeptName)
+			# order = []
+			# for key, var in scores:
+			# 	order.append(key)
 
+		# print scores
+		# print fams
 
-def print_families_to_file(fams, DeptName):
-	# convert fams to a list form for csv printing
+		self.fams = fams
 
-	toPrint = []
+		self.save_matchings()
+		self.print_families_to_file()
 
-	for rents, children in fams.iteritems():
-		rentlist = list(rents)
-		for c in children:
-			toPrint.append([c] + rentlist)
+	def analyse(self):
+		sizes = {}
+		for rents, children in self.fams.iteritems():
+			try:
+				sizes[len(children)] += 1
 
-	print toPrint
+			except KeyError:
+				sizes[len(children)] = 1
+		print 'Distribution of family sizes:', sizes
 
-	header = ['child', 'parent 1', 'parent 2']
-	# for i in range(1, int(maxFamSize) + 1):
-	# 	header.append('child ' + str(i))
+		print sizes.keys(), sizes.values()
+		plt.figure()
+		# plt.ion()
+		plt.bar(sizes.keys(), sizes.values())
+		plt.show()
+		# plt.hist(sizes.values(), bins=len(sizes.keys()), range=sizes.keys())
 
-	DeptName = DeptName.split(" ")
-	fname = ''
-	for l in DeptName:
-		fname = fname + l
-	fname = fname + '.csv'
+	def save_matchings(self):
+		s = shelve.open('shelves/{fname}'.format(fname=self.CamelName))
+		s['DeptName'] = self.DeptName
+		s['fams'] = self.fams
+		s.close()
 
-	with open('output/' + fname, 'wb+') as csvfile:
-		writer = csv.writer(csvfile)
-		writer.writerow(header)
-		for line in toPrint:
-			writer.writerow(line)
+	def open_matchings(self):
+		s = shelve.open(('shelves/{fname}').format(fname=self.CamelName))
+		self.DeptName = s['DeptName']
+		self.fams = s['fams']
+		s.close()
+
+	def print_families_to_file(self):
+		# convert fams to a list form for csv printing
+
+		toPrint = []
+
+		for rents, children in self.fams.iteritems():
+			rentlist = list(rents)
+			for c in children:
+				toPrint.append([c] + rentlist)
+
+		print toPrint
+
+		header = ['child', 'parent 1', 'parent 2']
+		# for i in range(1, int(maxFamSize) + 1):
+		# 	header.append('child ' + str(i))
+
+		with open('output/' + self.CamelName + '.csv', 'wb+') as csvfile:
+			writer = csv.writer(csvfile)
+			writer.writerow(header)
+			for line in toPrint:
+				writer.writerow(line)
 
 def printParents():
 	work = stuff(db)

@@ -32,6 +32,8 @@ class babyMaker:
 
 		print 'Matching {pars} pairs of parents with {childs} children.\nMax Family size is {famsize}'.format(pars=len(fams), childs=len(unallocatedFreshers), famsize=maxFamSize)
 
+		allocated_score = []
+
 		while unallocatedFreshers:
 			scores = {}
 
@@ -51,7 +53,9 @@ class babyMaker:
 			if score == 0:
 				print 'score is 0 so finding small families'
 				famId = findSmallestFam(fams)
-		
+			
+			allocated_score.append(score)
+
 			fams[famId].append(fresherId)
 
 			unallocatedFreshers.remove(fresherId)
@@ -71,6 +75,8 @@ class babyMaker:
 		# print fams
 
 		self.fams = fams
+		self.allocated_score = allocated_score
+		print 'scores: ', allocated_score
 
 		self.save_matchings()
 		self.print_families_to_file()
@@ -96,12 +102,14 @@ class babyMaker:
 		s = shelve.open('shelves/{fname}'.format(fname=self.CamelName))
 		s['DeptName'] = self.DeptName
 		s['fams'] = self.fams
+		s['allocated_score'] = self.allocated_score
 		s.close()
 
 	def open_matchings(self):
 		s = shelve.open(('shelves/{fname}').format(fname=self.CamelName))
 		self.DeptName = s['DeptName']
 		self.fams = s['fams']
+		self.allocated_score = s['allocated_score']
 		s.close()
 
 	def print_families_to_file(self):

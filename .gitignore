@@ -1,3 +1,4 @@
+*.csv
 db.py
 mongostore/
 dump/

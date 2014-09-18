@@ -1,2 +1,9 @@
 import sqlsoup
+from pymongo import MongoClient
+
 db = sqlsoup.SQLSoup('mysql://DB_STUFF_HERE')
+
+newerpol = sqlsoup.SQLSoup('mssql+pymssql://scott:tiger@hostname:port/dbname')
+
+client = MongoClient('mongodb://localhost:27017/')
+mg = client['database-name']

@@ -1,7 +1,7 @@
 import argparse
 from prettytable import PrettyTable
 
-from db import db
+from db import db, mg, newerpol
 from helpers import *
 
 parser = argparse.ArgumentParser(description='ICU MADASS Matching System')
@@ -10,10 +10,11 @@ parser.add_argument('-d', '--depts', type=long, nargs='*', help='Optional for on
 parser.add_argument('-a', '--anal', action='store_true', help='Raise this flag to run some analysis on the computed data')
 parser.add_argument('--dry', action='store_true', help='Raise this flag to use data calculated and stored from before')
 parser.add_argument('-l', '--list', action='store_true', help='List all Departments')
+parser.add_argument('-c', '--couples', action='store_true', help='List all married couples in each department')
 
 args = vars(parser.parse_args())
 
-helper = stuff(db)
+helper = stuff(db, mg, newerpol)
 depts = dict(helper.ReturnDepts())
 
 if args['list']:
@@ -26,7 +27,10 @@ if args['list']:
     
     exit()
 
-
+if args['couples']:
+    print helper.ListParents()
+    print helper.ListFreshers()
+    exit()
 
 if args['depts']:
     print "Making babies for specified Departments..."

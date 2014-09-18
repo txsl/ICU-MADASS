@@ -1,13 +1,14 @@
 from __future__ import division
 import numpy
 import copy
-from db import db
+from db import db, newerpol, mg
 from collections import OrderedDict
 import math
 import pickle
 import csv
 import shelve
 import matplotlib.pyplot as plt
+from sqlalchemy import Table
 
 
 class babyMaker:
@@ -178,9 +179,11 @@ def AreTheyThere(haystack, needle):
 
 class stuff:
 
-	def __init__(self, db):
+	def __init__(self, db, mg, newerpol):
 		self.db = db # This is an SQLSoup class (database connection) If crap string, then things will break.
 		#db.PersonInterests.filter(db.PersonInterests.PersonId==14769)
+		self.mg = mg
+		self.newerpol = newerpol
 		self.Interests = {}
 
 	def returnFreshers(self, DeptId):
@@ -283,9 +286,75 @@ class stuff:
 		# return math.pi-math.acos(dotproduct/(ch_norm*com_norm))
 
 	def ReturnDepts(self):
-		depts = self.db.Departments.all()
+		depts = self.db.Departments.filter(self.db.Departments.OptedOut==0)
 		r = []
 		for d in depts:
 			r.append((d.DepartmentId, d.DepartmentNameTypeName))
 		return r
-		
+
+	def ListParents(self):
+		all_couples = self.mg.Couples
+		# all_couples.distinct()
+		# s = self.newerpol.MumsandDads
+		# s = s.alias['MumsandDads']
+		# newerpol_table = db.map(s, primary_key=[s.CID])
+		# print newerpol_table.all()
+
+		# pa_t = Table("MumsandDads", self.newerpol._metadata, autoload=True)
+		# pa = u.map(pa_t,primary_key=[pa_t.c.CID])
+		# pa.all()
+
+		# print all_couples.collection_names()
+		all_signed_up = {}
+
+		for c in all_couples.find():
+			for keys, items in c.iteritems():
+				try:
+					pid = long(keys)
+					# print pid
+					meta = self.mg.Metadata.find_one({"_id": pid})
+					# print meta
+					try:
+						all_signed_up[meta['DepartmentId']].append(pid)
+					except KeyError:
+						all_signed_up[meta['DepartmentId']] = []
+						all_signed_up[meta['DepartmentId']].append(pid)
+					except TypeError:
+						print '!!ERROR!! PeopleID', pid
+
+				except ValueError:
+					pass
+
+		print all_signed_up
+				# for k in keys:
+					# print k
+					# try:
+					# 	pid = float(k)
+					# 	print pid, k
+					# except ValueError:
+					# 	pass
+
+	def ListFreshers(self):
+		print 'Freshers'
+		all_signed_up = {}
+
+		all_freshers = self.mg.Freshers
+
+		for f in all_freshers.find():	
+			for keys, items in f.iteritems():
+				try:
+					pid = long(keys)
+					# print pid
+					meta = self.mg.Metadata.find_one({"_id": pid})
+					# print meta
+					try:
+						all_signed_up[meta['DepartmentId']].append(pid)
+					except KeyError:
+						all_signed_up[meta['DepartmentId']] = []
+						all_signed_up[meta['DepartmentId']].append(pid)
+					except TypeError:
+						print '!!ERROR!! PeopleID', pid
+
+				except ValueError:
+					pass
+		print all_signed_up

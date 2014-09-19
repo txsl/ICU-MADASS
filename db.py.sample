@@ -1,9 +1,13 @@
 import sqlsoup
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
 from pymongo import MongoClient
 
 db = sqlsoup.SQLSoup('mysql://DB_STUFF_HERE')
 
-newerpol = sqlsoup.SQLSoup('mssql+pymssql://scott:tiger@hostname:port/dbname')
+erp_engine = create_engine('mssql+pymssql://username:pass@host:port/db_name')
+erp_session = sessionmaker(bind=erp_engine)
+newerpol = erp_session()
 
 client = MongoClient('mongodb://localhost:27017/')
 mg = client['database-name']

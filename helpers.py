@@ -10,6 +10,7 @@ import shelve
 import matplotlib.pyplot as plt
 from sqlalchemy import Table
 
+from newerpol_schema import t_MumsandDads
 
 class babyMaker:
 
@@ -177,6 +178,28 @@ def AreTheyThere(haystack, needle):
 	# print needle, 'not in here'
 	return False
 
+def MumsandDadsViewToPrint(t_person):
+	person = list(t_person)
+	del person[-4] # Delete study year
+	del person[-3] # Delete CID
+	del person[3]
+	del person[0] # Delete PeopleID
+	return person
+
+# def utf_8_encoder(unicode_csv_data):
+#     for line in unicode_csv_data:
+#         yield line.encode('utf-8')
+
+MumsandDadsViewHeader = [u'username', u'email', u'first_name', u'last_name', u'Status', u'Department', u'UG/PG', u'full_name']
+
+def print_MADView_to_csv(filename, header, data):
+	with open('output/'+filename+'.csv', 'w+') as csvfile:
+		spamwriter = csv.writer(csvfile)
+		spamwriter.writerow(header)
+		# data = utf_8_encoder(data)
+		for row in data:
+			spamwriter.writerow([unicode(s).encode("utf-8") for s in row])
+
 class stuff:
 
 	def __init__(self, db, mg, newerpol):
@@ -292,19 +315,102 @@ class stuff:
 			r.append((d.DepartmentId, d.DepartmentNameTypeName))
 		return r
 
+	def FindMissingParents(self, parents):
+		all_couples = self.mg.Couples
+		all_signed_up = []
+
+		for c in all_couples.find():
+			for keys, items in c.iteritems():
+				try:
+					pid = long(keys)
+					# print pid
+					# meta = self.mg.Metadata.find_one({"_id": pid})
+					# print meta
+					# person = newerpol.query(t_MumsandDads).filter_by(ID=pid).first()
+					# try:
+					all_signed_up.append(pid)
+					# except TypeError:
+					# 	print '!!ERROR!! PeopleID', pid
+				
+				except ValueError:
+					pass # Ie if the ID key
+		
+		output = {}
+
+		for d in self.ReturnDepts():
+			deptname = d[1]
+			potentials = self.newerpol.query(t_MumsandDads).filter_by(PersonStatus='Current', StudentTypeCode=u'UG', OCNameTypeName=unicode(deptname)).all()
+			# potentials = self.newerpol.query(t_MumsandDads).filter(PersonStatus=='Current', StudentTypeCode=='UG', OCNameTypeName==deptname).all()
+			for p in potentials:
+				# print p
+				# print all_signed_up
+				# print potentials
+				try:
+					all_signed_up.remove(p[-4])
+					print 'removing, ', p
+					potentials.remove(p)
+				except ValueError:
+					pass
+
+			for index, item in enumerate(potentials):
+				potentials[index] = MumsandDadsViewToPrint(item)
+			
+			output[deptname] = potentials
+		return output
+
+	def FindMissingFreshers(self, freshers):
+		all_signed_up = []
+
+		for c in self.mg.Freshers.find():
+			for keys, items in c.iteritems():
+				try:
+					pid = long(keys)
+					all_signed_up.append(pid)
+				except ValueError:
+					pass # Ie if the ID key
+		
+		output = {}
+
+		for d in self.ReturnDepts():
+			deptname = d[1]
+			potentials = self.newerpol.query(t_MumsandDads).filter_by(PersonStatus='Incoming', StudentTypeCode=u'UG', OCNameTypeName=unicode(deptname)).all()
+			# potentials = self.newerpol.query(t_MumsandDads).filter(PersonStatus=='Current', StudentTypeCode=='UG', OCNameTypeName==deptname).all()
+			for p in potentials:
+				# print p
+				# print all_signed_up
+				# print potentials
+				try:
+					all_signed_up.remove(p[-4])
+					print 'removing, ', p
+					potentials.remove(p)
+				except ValueError:
+					pass
+
+			for index, item in enumerate(potentials):
+				potentials[index] = MumsandDadsViewToPrint(item)
+			
+			output[deptname] = potentials
+		return output
+
+# t_MumsandDads = Table(
+#     'MumsandDads', metadata,
+#     Column('CID', Unicode(8)),
+#     Column('Login', Unicode(50)),
+#     Column('PrimaryEmail', Unicode(255)),
+#     Column('GenderDesc', Unicode(50), nullable=False),
+#     Column('FirstName', Unicode(255)),
+#     Column('Surname', Unicode(255)),
+#     Column('PersonStatus', String(8, u'SQL_Latin1_General_CP1_CI_AS')),
+#     Column('OCNameTypeName', Unicode(255), nullable=False),
+#     Column('ID', Integer, nullable=False),
+#     Column('StudyYear', Integer),
+#     Column('StudentTypeCode', Unicode(50)),
+#     Column('LookupName', Unicode(511))
+# )
+
+
 	def ListParents(self):
 		all_couples = self.mg.Couples
-		# all_couples.distinct()
-		# s = self.newerpol.MumsandDads
-		# s = s.alias['MumsandDads']
-		# newerpol_table = db.map(s, primary_key=[s.CID])
-		# print newerpol_table.all()
-
-		# pa_t = Table("MumsandDads", self.newerpol._metadata, autoload=True)
-		# pa = u.map(pa_t,primary_key=[pa_t.c.CID])
-		# pa.all()
-
-		# print all_couples.collection_names()
 		all_signed_up = {}
 
 		for c in all_couples.find():
@@ -314,28 +420,22 @@ class stuff:
 					# print pid
 					meta = self.mg.Metadata.find_one({"_id": pid})
 					# print meta
+					person = newerpol.query(t_MumsandDads).filter_by(ID=pid).first()
 					try:
-						all_signed_up[meta['DepartmentId']].append(pid)
+						all_signed_up[meta['DepartmentId']].append(MumsandDadsViewToPrint(person))
 					except KeyError:
 						all_signed_up[meta['DepartmentId']] = []
-						all_signed_up[meta['DepartmentId']].append(pid)
+						all_signed_up[meta['DepartmentId']].append(MumsandDadsViewToPrint(person))
 					except TypeError:
 						print '!!ERROR!! PeopleID', pid
 
 				except ValueError:
-					pass
+					pass # Ie if the ID key
 
-		print all_signed_up
-				# for k in keys:
-					# print k
-					# try:
-					# 	pid = float(k)
-					# 	print pid, k
-					# except ValueError:
-					# 	pass
+		return all_signed_up
+
 
 	def ListFreshers(self):
-		print 'Freshers'
 		all_signed_up = {}
 
 		all_freshers = self.mg.Freshers
@@ -346,15 +446,17 @@ class stuff:
 					pid = long(keys)
 					# print pid
 					meta = self.mg.Metadata.find_one({"_id": pid})
+					person = newerpol.query(t_MumsandDads).filter_by(ID=pid).first()
 					# print meta
 					try:
-						all_signed_up[meta['DepartmentId']].append(pid)
+						all_signed_up[meta['DepartmentId']].append(MumsandDadsViewToPrint(person))
 					except KeyError:
 						all_signed_up[meta['DepartmentId']] = []
-						all_signed_up[meta['DepartmentId']].append(pid)
+						all_signed_up[meta['DepartmentId']].append(MumsandDadsViewToPrint(person))
 					except TypeError:
 						print '!!ERROR!! PeopleID', pid
 
 				except ValueError:
 					pass
-		print all_signed_up
+
+		return all_signed_up

@@ -44,7 +44,7 @@ if args['current']:
         print_MADView_to_csv('current_children/'+name.DepartmentNameTypeName, MumsandDadsViewHeader, people)
 
     missing_freshers = helper.FindMissingFreshers(freshers)
-    for depts, people in missing_parents.iteritems():
+    for depts, people in missing_freshers.iteritems():
         print_MADView_to_csv('missing_children/'+depts, MumsandDadsViewHeader, people)
 
 

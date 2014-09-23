@@ -392,23 +392,6 @@ class stuff:
 			output[deptname] = potentials
 		return output
 
-# t_MumsandDads = Table(
-#     'MumsandDads', metadata,
-#     Column('CID', Unicode(8)),
-#     Column('Login', Unicode(50)),
-#     Column('PrimaryEmail', Unicode(255)),
-#     Column('GenderDesc', Unicode(50), nullable=False),
-#     Column('FirstName', Unicode(255)),
-#     Column('Surname', Unicode(255)),
-#     Column('PersonStatus', String(8, u'SQL_Latin1_General_CP1_CI_AS')),
-#     Column('OCNameTypeName', Unicode(255), nullable=False),
-#     Column('ID', Integer, nullable=False),
-#     Column('StudyYear', Integer),
-#     Column('StudentTypeCode', Unicode(50)),
-#     Column('LookupName', Unicode(511))
-# )
-
-
 	def ListParents(self):
 		all_couples = self.mg.Couples
 		all_signed_up = {}

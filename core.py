@@ -18,11 +18,11 @@ class babyMaker:
 
     def makeBabies(self):
 
-        self.work.build_department(self.DeptId)
-        exit()
+        unallocatedFreshers, fams, familiesWithSpace = self.work.build_department(self.DeptId)
+        # exit()
 
-        unallocatedFreshers = self.work.returnFreshers(self.DeptId)
-        fams, familiesWithSpace = self.work.StartFamilies(self.DeptId)
+        # unallocatedFreshers = self.work.returnFreshers(self.DeptId)
+        # fams, familiesWithSpace = self.work.StartFamilies(self.DeptId)
 
         maxFamSize = math.ceil(len(unallocatedFreshers) / (len(fams)))
 

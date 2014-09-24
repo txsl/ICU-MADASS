@@ -146,6 +146,8 @@ class stuff:
     def build_department(self, dept_id):
         p_interests, c_interests = {}, {}
         all_freshers, all_parents = [], []
+        families_start = {}
+        parent_count = 0
 
         all_members = self.mg.Metadata.find({"DepartmentId": dept_id})
 
@@ -154,27 +156,46 @@ class stuff:
             personid = m['_id']
 
             if m['Collection'] == 'Couples':
+                parent_count +=1
                 couple = self.mg.Couples.find_one({"_id": collection_object})
-                for keys, items in couple.iteritems():
-                try:
-                    pid = long(keys)
-                    if pid in all_parents
+                this_couple = []
 
-                except ValueError:
-                    pass # Ie if the ID key
+                # to extract the keys (IDs) from each couple
+                for keys, items in couple.iteritems():
+                    try:
+                        pid = long(keys)
+                        this_couple.append(pid)
+                    except ValueError:
+                        pass # Ie if the ID key
+
+                this_couple = tuple(this_couple)
+
+                # if we haven't looked at the couple already,
+                        # add them to our list and dict
+                if this_couple not in all_parents:
+                    all_parents.append(this_couple)
+                    families_start[this_couple] = []
 
                 p_interests[personid] = couple[unicode(personid)]['Interests']
 
             elif m['Collection'] == 'Freshers':
                 fresher = self.mg.Freshers.find_one({"_id": collection_object})
-
+                all_freshers.append(personid)
                 c_interests[personid] = fresher[unicode(personid)]['Interests']
 
             else:
+                # They wouldn't be in either collection if they logged in
+                    # but didn't actually then register (or got divorced)
                 pass
+
+
+        if len(all_parents) != parent_count/2:
+            exit('Exiting: Something has gone wrong with parent compilation')
 
         self.Interests = copy.deepcopy(p_interests)
         self.Interests.update(c_interests)
+
+        return all_freshers, families_start, all_parents
 
     def StartFamilies(self, DeptId): #This function works on the assumtion that there are no 'dud' parents. Data cleaned by the wonderful @lsproc
         parents = self.db.ParentPeople.filter(self.db.ParentPeople.DepartmentId==DeptId)

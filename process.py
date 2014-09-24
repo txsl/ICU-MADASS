@@ -1,7 +1,8 @@
 import argparse
 from prettytable import PrettyTable
 
-from db import db, mg, newerpol
+from db import mg, newerpol
+from core import *
 from helpers import *
 
 parser = argparse.ArgumentParser(description='ICU MADASS Matching System')

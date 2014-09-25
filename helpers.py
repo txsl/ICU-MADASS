@@ -143,6 +143,15 @@ class stuff:
 
         self.Interests.update(Cinterests)
 
+    def generate_interest_matrix(self, interest_list):
+        base_int = 36
+        output = numpy.zeros(base_int)
+
+        for i in (interest_list):
+            output[int(i)] = 1
+
+        return output
+
     def build_department(self, dept_id):
         p_interests, c_interests = {}, {}
         all_freshers, all_parents = [], []
@@ -176,12 +185,12 @@ class stuff:
                     all_parents.append(this_couple)
                     families_start[this_couple] = []
 
-                p_interests[personid] = couple[unicode(personid)]['Interests']
+                p_interests[personid] = self.generate_interest_matrix(couple[unicode(personid)]['Interests'])
 
             elif m['Collection'] == 'Freshers':
                 fresher = self.mg.Freshers.find_one({"_id": collection_object})
                 all_freshers.append(personid)
-                c_interests[personid] = fresher[unicode(personid)]['Interests']
+                c_interests[personid] = self.generate_interest_matrix(fresher[unicode(personid)]['Interests'])
 
             else:
                 # They wouldn't be in either collection if they logged in

@@ -14,7 +14,7 @@ from newerpol_schema import t_MumsandDads
 
 EXTRA_DATA_DEPTS_KEY = {
     8: "CH_AUX",
-    13: "PH_AUX"
+    13: "PH_TUT"
 }
 
 def printParents():
@@ -84,10 +84,42 @@ class stuff:
         self.mg = mg
         self.newerpol = newerpol
         self.Interests = {}
+        self.external_data, self.external_keys = self.generate_ancillary_keys()
+
 
     def generate_ancillary_keys(self):
-        for dept_id, key in EXTRA_DATA_DEPTS_KEY:
-            print 'extra data for:', dept_id
+        data, keys = {}, {}
+
+        for dept_id, key in EXTRA_DATA_DEPTS_KEY.iteritems():
+            data[dept_id] = {}
+
+            freshers, parents = self.list_all_departmental_members(dept_id)
+
+            for f_id, obj in freshers.iteritems():
+                this_person = obj["raw"][unicode(f_id)]
+                try:
+                    data[dept_id][f_id] = this_person["ExternalData"][key]
+                except KeyError:
+                    print "Missing external data for", f_id
+
+            for couple, obj in parents.iteritems():
+                for person in couple:
+                    this_person = obj["raw"][unicode(person)]
+                    try:
+                        data[dept_id][person] = this_person["ExternalData"][key]
+                    except KeyError:
+                        print "Missing external data for", person
+
+            unique_keys = []
+
+            for key in data[dept_id].itervalues():
+                if key not in unique_keys:
+                    unique_keys.append(key)
+
+            keys[dept_id] = unique_keys
+
+        return data, keys
+
 
     def returnFreshers(self, DeptId):
         exit("This function is now defunct")
@@ -154,18 +186,32 @@ class stuff:
 
         self.Interests.update(Cinterests)
 
-    def generate_interest_matrix(self, interest_list, dept_id=None):
+    def generate_interest_matrix(self, user_id, interest_list, dept_id=None):
         base_int = 36
-
-        if dept_id in EXTRA_DATA_DEPTS_KEY:
-            pass
+        extra_weighting = 10
+        extra_options = 0
 
         output = numpy.zeros(base_int)
+
+        if dept_id in EXTRA_DATA_DEPTS_KEY:
+            distrib = {}
+            for key in self.external_keys[dept_id]:
+                distrib[key] = extra_weighting * extra_options
+                extra_options +=1
+            output = numpy.zeros(base_int + extra_options*extra_weighting)
+            try:
+                key = self.external_data[dept_id][user_id]
+            except KeyError:
+                print "Once again, missing data for", user_id
+
+            this_weighting = distrib[key]
+            output[(base_int + this_weighting):(base_int + this_weighting + extra_weighting)] = 1
 
         for i in (interest_list):
             output[int(i)] = 1
 
         return output
+
 
     def list_all_departmental_members(self, dept_id):
         all_members = self.mg.Metadata.find({"DepartmentId": dept_id})
@@ -228,7 +274,7 @@ class stuff:
         freshers, parents = self.list_all_departmental_members(dept_id)
 
         for f_id, obj in freshers.iteritems():
-            c_interests[f_id] = self.generate_interest_matrix(obj["raw"][unicode(f_id)]["Interests"])
+            c_interests[f_id] = self.generate_interest_matrix(f_id, obj["raw"][unicode(f_id)]["Interests"], dept_id)
             freshers_list.append(f_id)
 
 
@@ -236,7 +282,7 @@ class stuff:
             # store = self.mg.Couples.find_one({"_id": obj["_id"]})
 
             for person in couples:
-                p_interests[person] = self.generate_interest_matrix(obj["raw"][unicode(person)]["Interests"])
+                p_interests[person] = self.generate_interest_matrix(person, obj["raw"][unicode(person)]["Interests"], dept_id)
 
             families_start[couples] = []
             parents_list.append(couples)
@@ -245,6 +291,7 @@ class stuff:
         self.Interests.update(c_interests)
 
         return freshers_list, families_start, parents_list
+
 
     def StartFamilies(self, DeptId): #This function works on the assumtion that there are no 'dud' parents. Data cleaned by the wonderful @lsproc
         exit("This function is now defunct")

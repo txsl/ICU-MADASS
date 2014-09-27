@@ -195,11 +195,11 @@ class stuff:
                 # if we haven't looked at the couple already,
                         # add them to our list and dict
                 if this_couple not in parents:
-                    parents[this_couple] = {"_id": collection_object}
+                    parents[this_couple] = {"raw": couple}
 
             elif m['Collection'] == 'Freshers':
-                # fresher = self.mg.Freshers.find_one({"_id": collection_object})
-                freshers[personid] = {"_id": collection_object}
+                fresher = self.mg.Freshers.find_one({"_id": collection_object})
+                freshers[personid] = {"raw": fresher}
 
             else:
                 # They wouldn't be in either collection if they logged in
@@ -228,62 +228,18 @@ class stuff:
         freshers, parents = self.list_all_departmental_members(dept_id)
 
         for f_id, obj in freshers.iteritems():
-            this_one = self.mg.Freshers.find_one({"_id": obj["_id"]})
-            c_interests[f_id] = self.generate_interest_matrix(this_one[unicode(f_id)]["Interests"])
+            c_interests[f_id] = self.generate_interest_matrix(obj["raw"][unicode(f_id)]["Interests"])
             freshers_list.append(f_id)
 
+
         for couples, obj in parents.iteritems():
-            store = self.mg.Couples.find_one({"_id": obj["_id"]})
+            # store = self.mg.Couples.find_one({"_id": obj["_id"]})
 
             for person in couples:
-                p_interests[person] = self.generate_interest_matrix(store[unicode(person)]["Interests"])
+                p_interests[person] = self.generate_interest_matrix(obj["raw"][unicode(person)]["Interests"])
 
             families_start[couples] = []
             parents_list.append(couples)
-
-        # for m in all_members:
-        #     collection_object = m['CollectionObject']
-        #     personid = unicode(m['_id'])
-        #
-        #     if m['Collection'] == 'Couples':
-        #         parent_count +=1
-        #         couple = self.mg.Couples.find_one({"_id": collection_object})
-        #         this_couple = []
-        #
-        #         # to extract the keys (IDs) from each couple
-        #         for keys, items in couple.iteritems():
-        #             try:
-        #                 pid = long(keys)
-        #                 this_couple.append(pid)
-        #             except ValueError:
-        #                 pass # Ie if the ID key
-        #
-        #         this_couple = tuple(this_couple)
-        #
-        #         # if we haven't looked at the couple already,
-        #                 # add them to our list and dict
-        #         if this_couple not in all_parents:
-        #             all_parents.append(this_couple)
-        #             families_start[this_couple] = []
-        #
-        #
-        #         # Now we get their interests
-        #
-        #         p_interests[int(personid)] = self.generate_interest_matrix(couple[personid]['Interests'])
-        #
-        #     elif m['Collection'] == 'Freshers':
-        #         fresher = self.mg.Freshers.find_one({"_id": collection_object})
-        #         all_freshers.append(int(personid))
-        #         c_interests[int(personid)] = self.generate_interest_matrix(fresher[unicode(personid)]['Interests'])
-        #
-        #     else:
-        #         # They wouldn't be in either collection if they logged in
-        #             # but didn't actually then register (or got divorced)
-        #         pass
-
-        #
-        # if len(all_parents) != parent_count/2:
-        #     exit('Exiting: Something has gone wrong with parent compilation')
 
         self.Interests = copy.deepcopy(p_interests)
         self.Interests.update(c_interests)
@@ -291,6 +247,7 @@ class stuff:
         return freshers_list, families_start, parents_list
 
     def StartFamilies(self, DeptId): #This function works on the assumtion that there are no 'dud' parents. Data cleaned by the wonderful @lsproc
+        exit("This function is now defunct")
         parents = self.db.ParentPeople.filter(self.db.ParentPeople.DepartmentId==DeptId)
         start = {}
         fam_list = []

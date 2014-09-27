@@ -12,6 +12,10 @@ import matplotlib.pyplot as plt
 
 from newerpol_schema import t_MumsandDads
 
+EXTRA_DATA_DEPTS_KEY = {
+    8: "CH_AUX",
+    13: "PH_AUX"
+}
 
 def printParents():
     work = stuff(db)
@@ -81,7 +85,12 @@ class stuff:
         self.newerpol = newerpol
         self.Interests = {}
 
+    def generate_ancillary_keys(self):
+        for dept_id, key in EXTRA_DATA_DEPTS_KEY:
+            print 'extra data for:', dept_id
+
     def returnFreshers(self, DeptId):
+        exit("This function is now defunct")
         freshers = self.db.FresherPeople.filter(self.db.FresherPeople.DepartmentId==DeptId)
         ids = []
         for f in freshers:
@@ -89,6 +98,7 @@ class stuff:
         return ids
 
     def GetInterests(self, PeopleId, Chem): # Gets interests for a particular department
+        exit("This function is now defunct")
         baseInt = 33 # 35 in 2014
         extraWeighting = 10 # How many 'interests' are we giving these external ones?
         extraOptions = 6
@@ -121,6 +131,7 @@ class stuff:
         return res
 
     def BuildInterests(self, DeptId): # Builds interests up for an entire Department in to a dict, but tupled to split between parents and children (makes it easier later)
+        exit("This function is now defunct")
         Pinterests, Cinterests = {}, {} # Like this as a hangover, in case we want to return these rather than just keep them
         # For the parents
         people = self.db.ParentPeople.filter(self.db.ParentPeople.DepartmentId==DeptId)
@@ -143,8 +154,12 @@ class stuff:
 
         self.Interests.update(Cinterests)
 
-    def generate_interest_matrix(self, interest_list):
+    def generate_interest_matrix(self, interest_list, dept_id=None):
         base_int = 36
+
+        if dept_id in EXTRA_DATA_DEPTS_KEY:
+            pass
+
         output = numpy.zeros(base_int)
 
         for i in (interest_list):
@@ -152,17 +167,15 @@ class stuff:
 
         return output
 
-    def build_department(self, dept_id):
-        p_interests, c_interests = {}, {}
-        all_freshers, all_parents = [], []
-        families_start = {}
-        parent_count = 0
-
+    def list_all_departmental_members(self, dept_id):
         all_members = self.mg.Metadata.find({"DepartmentId": dept_id})
+
+        freshers, parents = {}, {}
+        parent_count = 0
 
         for m in all_members:
             collection_object = m['CollectionObject']
-            personid = m['_id']
+            personid = int(m['_id'])
 
             if m['Collection'] == 'Couples':
                 parent_count +=1
@@ -181,30 +194,101 @@ class stuff:
 
                 # if we haven't looked at the couple already,
                         # add them to our list and dict
-                if this_couple not in all_parents:
-                    all_parents.append(this_couple)
-                    families_start[this_couple] = []
-
-                p_interests[personid] = self.generate_interest_matrix(couple[unicode(personid)]['Interests'])
+                if this_couple not in parents:
+                    parents[this_couple] = {"_id": collection_object}
 
             elif m['Collection'] == 'Freshers':
-                fresher = self.mg.Freshers.find_one({"_id": collection_object})
-                all_freshers.append(personid)
-                c_interests[personid] = self.generate_interest_matrix(fresher[unicode(personid)]['Interests'])
+                # fresher = self.mg.Freshers.find_one({"_id": collection_object})
+                freshers[personid] = {"_id": collection_object}
 
             else:
                 # They wouldn't be in either collection if they logged in
                     # but didn't actually then register (or got divorced)
                 pass
 
-
-        if len(all_parents) != parent_count/2:
+        if len(parents) != parent_count/2:
             exit('Exiting: Something has gone wrong with parent compilation')
+
+        return freshers, parents
+
+    def list_freshers(self, dept_id):
+        return self.list_all_departmental_members(dept_id)[0]
+
+
+    def build_department(self, dept_id):
+
+        p_interests, c_interests = {}, {}
+        # all_freshers, all_parents = [], []
+        freshers_list, parents_list = [], []
+        families_start = {}
+        # parent_count = 0
+
+        # all_members = self.mg.Metadata.find({"DepartmentId": dept_id})
+
+        freshers, parents = self.list_all_departmental_members(dept_id)
+
+        for f_id, obj in freshers.iteritems():
+            this_one = self.mg.Freshers.find_one({"_id": obj["_id"]})
+            c_interests[f_id] = self.generate_interest_matrix(this_one[unicode(f_id)]["Interests"])
+            freshers_list.append(f_id)
+
+        for couples, obj in parents.iteritems():
+            store = self.mg.Couples.find_one({"_id": obj["_id"]})
+
+            for person in couples:
+                p_interests[person] = self.generate_interest_matrix(store[unicode(person)]["Interests"])
+
+            families_start[couples] = []
+            parents_list.append(couples)
+
+        # for m in all_members:
+        #     collection_object = m['CollectionObject']
+        #     personid = unicode(m['_id'])
+        #
+        #     if m['Collection'] == 'Couples':
+        #         parent_count +=1
+        #         couple = self.mg.Couples.find_one({"_id": collection_object})
+        #         this_couple = []
+        #
+        #         # to extract the keys (IDs) from each couple
+        #         for keys, items in couple.iteritems():
+        #             try:
+        #                 pid = long(keys)
+        #                 this_couple.append(pid)
+        #             except ValueError:
+        #                 pass # Ie if the ID key
+        #
+        #         this_couple = tuple(this_couple)
+        #
+        #         # if we haven't looked at the couple already,
+        #                 # add them to our list and dict
+        #         if this_couple not in all_parents:
+        #             all_parents.append(this_couple)
+        #             families_start[this_couple] = []
+        #
+        #
+        #         # Now we get their interests
+        #
+        #         p_interests[int(personid)] = self.generate_interest_matrix(couple[personid]['Interests'])
+        #
+        #     elif m['Collection'] == 'Freshers':
+        #         fresher = self.mg.Freshers.find_one({"_id": collection_object})
+        #         all_freshers.append(int(personid))
+        #         c_interests[int(personid)] = self.generate_interest_matrix(fresher[unicode(personid)]['Interests'])
+        #
+        #     else:
+        #         # They wouldn't be in either collection if they logged in
+        #             # but didn't actually then register (or got divorced)
+        #         pass
+
+        #
+        # if len(all_parents) != parent_count/2:
+        #     exit('Exiting: Something has gone wrong with parent compilation')
 
         self.Interests = copy.deepcopy(p_interests)
         self.Interests.update(c_interests)
 
-        return all_freshers, families_start, all_parents
+        return freshers_list, families_start, parents_list
 
     def StartFamilies(self, DeptId): #This function works on the assumtion that there are no 'dud' parents. Data cleaned by the wonderful @lsproc
         parents = self.db.ParentPeople.filter(self.db.ParentPeople.DepartmentId==DeptId)
@@ -230,6 +314,8 @@ class stuff:
 
     def CalcSimilarity(self, parents, children, fresher):
         # print parents
+        # print parents, children, fresher
+        # print self.Interests
         combined = numpy.logical_or(self.Interests[parents[0]], self.Interests[parents[1]])
         for child in children:
             combined = numpy.logical_or(combined, self.Interests[child])

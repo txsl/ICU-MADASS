@@ -1,3 +1,4 @@
+from __future__ import division
 from collections import OrderedDict
 import math
 import csv
@@ -25,9 +26,9 @@ class babyMaker:
         # fams, familiesWithSpace = self.work.StartFamilies(self.DeptId)
 
         maxFamSize = math.ceil(len(unallocatedFreshers) / (len(fams)))
-
         print 'Matching {pars} pairs of parents with {childs} children.\nMax Family size is {famsize}'.format(pars=len(fams), childs=len(unallocatedFreshers), famsize=maxFamSize)
-
+        print math.ceil(183/53), 183/53
+        # exit()
         allocated_score = []
 
         while unallocatedFreshers:
@@ -37,7 +38,7 @@ class babyMaker:
                 for fresh in unallocatedFreshers:
                     score = self.work.CalcSimilarity(fam, fams[fam], fresh)
                     scores[(fam, fresh)] = score
-
+            print scores, unallocatedFreshers
             scores = OrderedDict(sorted(scores.items(), key=lambda t: t[1])) # Let's order them, so we can match the best score
 
             allocated = scores.popitem()

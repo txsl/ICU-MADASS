@@ -27,8 +27,7 @@ class babyMaker:
 
         maxFamSize = math.ceil(len(unallocatedFreshers) / (len(fams)))
         print 'Matching {pars} pairs of parents with {childs} children.\nMax Family size is {famsize}'.format(pars=len(fams), childs=len(unallocatedFreshers), famsize=maxFamSize)
-        print math.ceil(183/53), 183/53
-        # exit()
+
         allocated_score = []
 
         while unallocatedFreshers:
@@ -38,7 +37,7 @@ class babyMaker:
                 for fresh in unallocatedFreshers:
                     score = self.work.CalcSimilarity(fam, fams[fam], fresh)
                     scores[(fam, fresh)] = score
-            print scores, unallocatedFreshers
+
             scores = OrderedDict(sorted(scores.items(), key=lambda t: t[1])) # Let's order them, so we can match the best score
 
             allocated = scores.popitem()
@@ -47,7 +46,11 @@ class babyMaker:
             fresherId = allocated[0][1]
             score = allocated[1]
 
-            if score == 0:
+            lowest = scores.popitem(last=False)
+            lowest_score = lowest[1]
+            print score, lowest_score
+
+            if score == lowest_score:
                 print 'score is 0 so finding small families'
                 famId = findSmallestFam(fams)
 
@@ -57,9 +60,9 @@ class babyMaker:
 
             unallocatedFreshers.remove(fresherId)
 
-            print len(fams[famId]), maxFamSize
+            # print len(fams[famId]), maxFamSize
             if len(fams[famId]) >= maxFamSize:
-                print familiesWithSpace
+                # print familiesWithSpace
                 familiesWithSpace.remove(famId)
                 print 'removing family'
 

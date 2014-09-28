@@ -69,7 +69,10 @@ else:
     print "Making babies for the entire University. Hold on tight: it's gona get warm..."
     for ids, dnames in depts.iteritems():
         print 'Making babies in', dnames
-        makeBabies(ids, dnames, analysis=args['anal'])
+        b = babyMaker(ids, dnames)
+        b.makeBabies()
+        if args['anal']:
+            b.analyse()
 
 
 exit('All done!')

@@ -14,13 +14,12 @@ class babyMaker:
         self.DeptId = DeptId
         self.DeptName = DeptName
         self.CamelName = DeptName.replace(' ', '')
-
         self.work = stuff(db, mg, newerpol)
+
 
     def makeBabies(self):
 
         unallocatedFreshers, fams, familiesWithSpace = self.work.build_department(self.DeptId)
-        # exit()
 
         # unallocatedFreshers = self.work.returnFreshers(self.DeptId)
         # fams, familiesWithSpace = self.work.StartFamilies(self.DeptId)
@@ -50,9 +49,27 @@ class babyMaker:
             lowest_score = lowest[1]
             print score, lowest_score
 
-            if score == lowest_score:
-                print 'score is 0 so finding small families'
-                famId = findSmallestFam(fams)
+            if self.DeptId in EXTRA_DATA_DEPTS_KEY.iterkeys():
+                lowest_score = EXTERNAL_DATA_WEIGHTING
+
+            if score <= lowest_score:
+                print 'score is minimal so finding small families'
+                famIds = findSmallestFams(fams)
+                found_hit = False
+                for match, this_score in scores.iteritems():
+                    if match[0] in famIds:
+                        if this_score == score:
+                            print match, this_score
+                            print 'Found match of some score (phew)'
+                            print fams[match[0]]
+                            famId, fresherId = match[0], match[1]
+                            print famId, fresherId
+                            found_hit = True
+                            break
+
+                if not found_hit: # We would be here if we only had 0 scores
+                    famId = famIds[0]
+                    print "Couldn't find anyone with any match"
 
             allocated_score.append(score)
 
@@ -120,7 +137,7 @@ class babyMaker:
         # for i in range(1, int(maxFamSize) + 1):
         # 	header.append('child ' + str(i))
 
-        with open('output/' + self.CamelName + '.csv', 'wb+') as csvfile:
+        with open('output/matches/' + self.CamelName + '.csv', 'wb+') as csvfile:
             writer = csv.writer(csvfile)
             writer.writerow(header)
             for line in toPrint:

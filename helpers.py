@@ -3,6 +3,7 @@ import numpy
 import copy
 import ast
 import csv
+from scipy.spatial.distance import jaccard
 
 from db import db, newerpol
 from collections import OrderedDict
@@ -16,6 +17,9 @@ EXTRA_DATA_DEPTS_KEY = {
     8: "CH_AUX",
     13: "PH_TUT"
 }
+
+EXTERNAL_DATA_WEIGHTING = 10
+BASE_INT = 36
 
 def printParents():
     work = stuff(db)
@@ -40,15 +44,17 @@ def printParents():
             for line in toPrint:
                 writer.writerow(line)
 
-def findSmallestFam(fams):
+def findSmallestFams(fams):
     size = 10000 # We're never going to have a family this big (I hope)!
-    smallRents = None
-    print fams
+    smallRents = []
     for rents, childs in fams.iteritems():
         if len(childs) < size:
             print 'smallest family is', len(childs)
-            smallRents = rents
             size = len(childs)
+
+    for rents, childs in fams.iteritems():
+        if len(childs) == size:
+            smallRents.append(rents)
     return smallRents
 
 def AreTheyThere(haystack, needle):
@@ -187,8 +193,8 @@ class stuff:
         self.Interests.update(Cinterests)
 
     def generate_interest_matrix(self, user_id, interest_list, dept_id=None):
-        base_int = 36
-        extra_weighting = 10
+        base_int = BASE_INT
+        extra_weighting = EXTERNAL_DATA_WEIGHTING
         extra_options = 0
 
         output = numpy.zeros(base_int)
@@ -292,6 +298,26 @@ class stuff:
 
         return freshers_list, families_start, parents_list
 
+    def calc_min_score(self, dept_id):
+        base_int = BASE_INT
+        extra_weighting = EXTERNAL_DATA_WEIGHTING
+
+        output = numpy.zeros(base_int)
+
+        if dept_id in EXTRA_DATA_DEPTS_KEY:
+            extra_options = 0
+
+            distrib = {}
+            for key in self.external_keys[dept_id]:
+                distrib[key] = EXTERNAL_DATA_WEIGHTING * extra_options
+                extra_options +=1
+            output = numpy.zeros(base_int + extra_options*extra_weighting)
+
+            this_weighting = 1
+            output[(base_int + this_weighting):(base_int + this_weighting + extra_weighting)] = 1
+        print output
+        self.Interests['SpecialMinCalc'] = output
+        return self.CalcSimilarity(('SpecialMinCalc', 'SpecialMinCalc'), [], 'SpecialMinCalc')
 
     def StartFamilies(self, DeptId): #This function works on the assumtion that there are no 'dud' parents. Data cleaned by the wonderful @lsproc
         exit("This function is now defunct")
@@ -310,20 +336,15 @@ class stuff:
         print 'spouseless: ', spouseless
         return start, fam_list
 
-    # def CalcFamInterests(self, parents, children):
-    # 	print parents[0], parents[1]
-    # 	print self.Interests[parents[0]], self.Interests[parents[1]]
-
-    # 	return combined
 
     def CalcSimilarity(self, parents, children, fresher):
-        # print parents
-        # print parents, children, fresher
-        # print self.Interests
+        #
+        # fresher self.Jaccard(parents, children, fresher)
+
         combined = numpy.logical_or(self.Interests[parents[0]], self.Interests[parents[1]])
         for child in children:
             combined = numpy.logical_or(combined, self.Interests[child])
-        # combined = numpy.divide(combined, 2 + len(children))
+        # return self.Jaccard(combined, self.Interests[fresher])
         return numpy.dot(combined, self.Interests[fresher])
 
         ## Below is some of Fabian's experimentation with taking between the vectors

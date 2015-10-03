@@ -54,10 +54,10 @@ if args['current']:
 if args['depts']:
     print "Making babies for specified Departments..."
     for selectd in args['depts']:
-        b = babyMaker(selectd, depts[selectd])
+        b = babyMaker(selectd)
         
         if not args['dry']:
-            print 'Making babies in', depts[selectd]
+            print 'Making babies in', selectd
             b.makeBabies()
         else:
             b.open_matchings()

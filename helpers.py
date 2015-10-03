@@ -217,12 +217,16 @@ class stuff:
 
 
     def list_all_departmental_members(self, dept_id):
-        all_members = self.mg.Metadata.find({"DepartmentId": dept_id})
-
-        freshers, parents = {}, {}
+        all_members = self.mg.Metadata.find({"Department": dept_id})
+        freshers, parents, lone_parents = {}, {}, {}
         parent_count = 0
 
         for m in all_members:
+            
+            if m['Username'] == None:
+                print m
+                continue
+
             collection_object = m['CollectionObject']
             personid = int(m['_id'])
 
@@ -250,6 +254,10 @@ class stuff:
                 fresher = self.mg.Freshers.find_one({"_id": collection_object})
                 freshers[personid] = {"raw": fresher}
 
+            elif m['Collection'] == 'LoneParents':
+                lone_parent = self.mg.LoneParents.find_one({"_id": collection_object})
+                lone_parents[personid] = {'raw': lone_parent}
+
             else:
                 # They wouldn't be in either collection if they logged in
                     # but didn't actually then register (or got divorced)
@@ -258,7 +266,7 @@ class stuff:
         if len(parents) != parent_count/2:
             exit('Exiting: Something has gone wrong with parent compilation')
 
-        return freshers, parents
+        return freshers, parents #, lone_parents
 
     def list_freshers(self, dept_id):
         return self.list_all_departmental_members(dept_id)[0]
@@ -277,15 +285,17 @@ class stuff:
         freshers, parents = self.list_all_departmental_members(dept_id)
 
         for f_id, obj in freshers.iteritems():
-            c_interests[f_id] = self.generate_interest_matrix(f_id, obj["raw"][unicode(f_id)]["Interests"], dept_id)
+            
+            c_interests[f_id] = self.generate_interest_matrix(f_id, obj["raw"]["person"]["Interests"], dept_id)
             freshers_list.append(f_id)
 
 
         for couples, obj in parents.iteritems():
             # store = self.mg.Couples.find_one({"_id": obj["_id"]})
 
-            for person in couples:
-                p_interests[person] = self.generate_interest_matrix(person, obj["raw"][unicode(person)]["Interests"], dept_id)
+            for person, person_identifier in zip(couples, ['person_1', 'person_2']):
+                # print person, obj
+                p_interests[person] = self.generate_interest_matrix(person, obj["raw"][person_identifier]["Interests"], dept_id)
 
             families_start[couples] = []
             parents_list.append(couples)
@@ -352,7 +362,7 @@ class stuff:
         # return math.pi-math.acos(dotproduct/(ch_norm*com_norm))
 
     def ReturnDepts(self):
-    	metadata = self.mg.Metadata
+        metadata = self.mg.Metadata
         depts = metadata.distinct('Department')
         return depts
 
@@ -371,7 +381,7 @@ class stuff:
                     # try:
                     all_signed_up.append(pid)
                     # except TypeError:
-                    # 	print '!!ERROR!! PeopleID', pid
+                    #   print '!!ERROR!! PeopleID', pid
 
                 except ValueError:
                     pass # Ie if the ID key

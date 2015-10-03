@@ -10,16 +10,15 @@ from helpers import *
 
 class babyMaker:
 
-    def __init__(self, DeptId, DeptName):
-        self.DeptId = DeptId
+    def __init__(self, DeptName):
         self.DeptName = DeptName
         self.CamelName = DeptName.replace(' ', '')
-        self.work = stuff(db, mg, newerpol)
+        self.work = stuff(mg)
 
 
     def makeBabies(self):
 
-        unallocatedFreshers, fams, familiesWithSpace = self.work.build_department(self.DeptId)
+        unallocatedFreshers, fams, familiesWithSpace = self.work.build_department(self.DeptName)
 
         # unallocatedFreshers = self.work.returnFreshers(self.DeptId)
         # fams, familiesWithSpace = self.work.StartFamilies(self.DeptId)
@@ -49,7 +48,7 @@ class babyMaker:
             lowest_score = lowest[1]
             print score, lowest_score
 
-            if self.DeptId in EXTRA_DATA_DEPTS_KEY.iterkeys():
+            if self.DeptName in EXTRA_DATA_DEPTS_KEY.iterkeys():
                 lowest_score = EXTERNAL_DATA_WEIGHTING
 
             if score <= lowest_score:

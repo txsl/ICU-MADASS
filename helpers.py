@@ -123,70 +123,6 @@ class stuff:
         return data, keys
 
 
-    def returnFreshers(self, DeptId):
-        exit("This function is now defunct")
-        freshers = self.db.FresherPeople.filter(self.db.FresherPeople.DepartmentId==DeptId)
-        ids = []
-        for f in freshers:
-            ids.append(f.PersonId)
-        return ids
-
-    def GetInterests(self, PeopleId, Chem): # Gets interests for a particular department
-        exit("This function is now defunct")
-        baseInt = 33 # 35 in 2014
-        extraWeighting = 10 # How many 'interests' are we giving these external ones?
-        extraOptions = 6
-
-        res = numpy.zeros(baseInt) # We have 32 interests, but there's an offset of one
-        if Chem:
-            res = numpy.zeros(baseInt + (extraOptions * extraWeighting))
-        ints = self.db.PersonInterests.filter(self.db.PersonInterests.PersonId==PeopleId)
-        for i in range(ints.count()):
-            res[ints[i].InterestId] = 1
-
-        if Chem:
-            try:
-                anc = self.db.PersonExternalData.filter(self.db.PersonExternalData.PersonId==PeopleId)
-                # print PeopleId
-                # print anc[0].DataValue
-                anc = anc[0].DataValue
-                distrib = {
-                            'MPC': 0,
-                            'MEDBIO': extraWeighting,
-                            'CHEMENG': extraWeighting*2,
-                            'LANG': extraWeighting*3,
-                            'HUMANITIES': extraWeighting*4,
-                            '': extraWeighting*5,
-                }
-                res[(baseInt + distrib[anc]):(baseInt + distrib[anc] + extraWeighting)] = 1
-                # print res
-            except IndexError:
-                print PeopleId, "doesn't have an entry in the External Data Table"
-        return res
-
-    def BuildInterests(self, DeptId): # Builds interests up for an entire Department in to a dict, but tupled to split between parents and children (makes it easier later)
-        exit("This function is now defunct")
-        Pinterests, Cinterests = {}, {} # Like this as a hangover, in case we want to return these rather than just keep them
-        # For the parents
-        people = self.db.ParentPeople.filter(self.db.ParentPeople.DepartmentId==DeptId)
-
-        for person in people:
-            if DeptId == 8:
-                Pinterests[person.PersonId] = self.GetInterests(person.PersonId, True)
-            else:
-                Pinterests[person.PersonId] = self.GetInterests(person.PersonId, False)
-        # For the freshers
-        people = self.db.FresherPeople.filter(self.db.FresherPeople.DepartmentId==DeptId)
-
-        for person in people:
-            if DeptId == 8:
-                Cinterests[person.PersonId] = self.GetInterests(person.PersonId, True)
-            else:
-                Cinterests[person.PersonId] = self.GetInterests(person.PersonId, False)
-
-        self.Interests = copy.deepcopy(Pinterests)
-
-        self.Interests.update(Cinterests)
 
     def generate_interest_matrix(self, user_id, interest_list, dept_id=None):
         base_int = BASE_INT
@@ -255,7 +191,9 @@ class stuff:
 
             elif m['Collection'] == 'LoneParents':
                 lone_parent = self.mg.LoneParents.find_one({"_id": collection_object})
-                lone_parents[personid] = {'raw': lone_parent}
+                print lone_parent
+                lone_parents[personid] = {'raw': lone_parent, 'interests': self.generate_interest_matrix(personid, lone_parent['person']['Interests'], dept_id)}
+
 
             else:
                 # They wouldn't be in either collection if they logged in
@@ -324,23 +262,6 @@ class stuff:
         print output
         self.Interests['SpecialMinCalc'] = output
         return self.CalcSimilarity(('SpecialMinCalc', 'SpecialMinCalc'), [], 'SpecialMinCalc')
-
-    def StartFamilies(self, DeptId): #This function works on the assumtion that there are no 'dud' parents. Data cleaned by the wonderful @lsproc
-        exit("This function is now defunct")
-        parents = self.db.ParentPeople.filter(self.db.ParentPeople.DepartmentId==DeptId)
-        start = {}
-        fam_list = []
-        spouseless = 0
-        for p in parents:
-            if not AreTheyThere(start, p.PersonId):
-                if p.ChosenSpouse is not None:
-                    start[(p.PersonId, p.ChosenSpouse)] = [] # Ie each family has an empty list of children to start off with
-                    fam_list.append((p.PersonId, p.ChosenSpouse))
-                else:
-                    # print 'no spouse'
-                    spouseless += 1
-        print 'spouseless: ', spouseless
-        return start, fam_list
 
 
     def CalcSimilarity(self, parents, children, fresher):

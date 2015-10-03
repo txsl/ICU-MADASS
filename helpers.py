@@ -14,8 +14,7 @@ import matplotlib.pyplot as plt
 # from newerpol_schema import t_MumsandDads
 
 EXTRA_DATA_DEPTS_KEY = {
-    8: "CH_AUX",
-    13: "PH_TUT"
+    "JMC & Computing": "DoC",
 }
 
 EXTERNAL_DATA_WEIGHTING = 10
@@ -99,15 +98,15 @@ class stuff:
             freshers, parents = self.list_all_departmental_members(dept_id)
 
             for f_id, obj in freshers.iteritems():
-                this_person = obj["raw"][unicode(f_id)]
+                this_person = obj["raw"]['person']
                 try:
                     data[dept_id][f_id] = this_person["ExternalData"][key]
                 except KeyError:
                     print "Missing external data for", f_id
 
             for couple, obj in parents.iteritems():
-                for person in couple:
-                    this_person = obj["raw"][unicode(person)]
+                for person, person_identifier in zip(couple, ['person_1', 'person_2']):
+                    this_person = obj["raw"][person_identifier]
                     try:
                         data[dept_id][person] = this_person["ExternalData"][key]
                     except KeyError:

@@ -1,7 +1,7 @@
 import argparse
 from prettytable import PrettyTable
 
-from db import mg, newerpol
+from db import mg
 from core import *
 from helpers import *
 
@@ -15,15 +15,15 @@ parser.add_argument('-c', '--current', action='store_true', help='List all marri
 
 args = vars(parser.parse_args())
 
-helper = stuff(db, mg, newerpol)
-depts = dict(helper.ReturnDepts())
+helper = stuff(mg)
+depts = helper.ReturnDepts()
 
 if args['list']:
     print 'Departments:'
     
-    x = PrettyTable(["Department", "ID"])
-    for ids, dnames in depts.iteritems():
-        x.add_row([dnames, ids])
+    x = PrettyTable(["Department"])
+    for dnames in depts:
+        x.add_row([dnames])
     print x
     
     exit()
@@ -67,9 +67,9 @@ if args['depts']:
 
 else:
     print "Making babies for the entire University. Hold on tight: it's gona get warm..."
-    for ids, dnames in depts.iteritems():
+    for dnames in depts:
         print 'Making babies in', dnames
-        b = babyMaker(ids, dnames)
+        b = babyMaker(dnames)
         b.makeBabies()
         if args['anal']:
             b.analyse()

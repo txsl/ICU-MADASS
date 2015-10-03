@@ -3,15 +3,15 @@ import numpy
 import copy
 import ast
 import csv
-from scipy.spatial.distance import jaccard
+# from scipy.spatial.distance import jaccard
 
-from db import db, newerpol
+# from db import db, newerpol
 from collections import OrderedDict
 # import pickle
 
 import matplotlib.pyplot as plt
 
-from newerpol_schema import t_MumsandDads
+# from newerpol_schema import t_MumsandDads
 
 EXTRA_DATA_DEPTS_KEY = {
     8: "CH_AUX",
@@ -84,11 +84,8 @@ def print_MADView_to_csv(filename, header, data):
 
 class stuff:
 
-    def __init__(self, db, mg, newerpol):
-        self.db = db # This is an SQLSoup class (database connection) If crap string, then things will break.
-        #db.PersonInterests.filter(db.PersonInterests.PersonId==14769)
+    def __init__(self, mg):
         self.mg = mg
-        self.newerpol = newerpol
         self.Interests = {}
         self.external_data, self.external_keys = self.generate_ancillary_keys()
 
@@ -355,11 +352,9 @@ class stuff:
         # return math.pi-math.acos(dotproduct/(ch_norm*com_norm))
 
     def ReturnDepts(self):
-        depts = self.db.Departments.filter(self.db.Departments.OptedOut==0)
-        r = []
-        for d in depts:
-            r.append((d.DepartmentId, d.DepartmentNameTypeName))
-        return r
+    	metadata = self.mg.Metadata
+        depts = metadata.distinct('Department')
+        return depts
 
     def FindMissingParents(self, parents):
         all_couples = self.mg.Couples

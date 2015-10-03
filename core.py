@@ -4,7 +4,7 @@ import math
 import csv
 import shelve
 import matplotlib.pyplot as plt
-from db import db, mg, newerpol
+from db import mg
 
 from helpers import *
 

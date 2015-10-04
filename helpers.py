@@ -3,6 +3,7 @@ import numpy
 import copy
 import ast
 import csv
+import itertools
 # from scipy.spatial.distance import jaccard
 
 # from db import db, newerpol
@@ -95,7 +96,7 @@ class stuff:
         for dept_id, key in EXTRA_DATA_DEPTS_KEY.iteritems():
             data[dept_id] = {}
 
-            freshers, parents = self.list_all_departmental_members(dept_id)
+            freshers, parents, lone_parents = self.list_all_departmental_members(dept_id, return_lone_parents=True)
 
             for f_id, obj in freshers.iteritems():
                 this_person = obj["raw"]['person']
@@ -103,6 +104,13 @@ class stuff:
                     data[dept_id][f_id] = this_person["ExternalData"][key]
                 except KeyError:
                     print "Missing external data for", f_id
+
+            for l_id, obj in lone_parents.iteritems():
+                this_person = obj["raw"]["person"]
+                try:
+                    data[dept_id][f_id] = this_person["ExternalData"][key]
+                except KeyError:
+                    print "Missing external data for", l_id
 
             for couple, obj in parents.iteritems():
                 for person, person_identifier in zip(couple, ['person_1', 'person_2']):
@@ -151,7 +159,11 @@ class stuff:
         return output
 
 
-    def list_all_departmental_members(self, dept_id):
+    def list_all_departmental_members(self, dept_id, return_lone_parents=False, match_lone_parents=False):
+
+        if return_lone_parents == True and match_lone_parents == True:
+            exit("Cannot return list of lone parents AND match them - only one or the other (or neither)")
+
         all_members = self.mg.Metadata.find({"Department": dept_id})
         freshers, parents, lone_parents = {}, {}, {}
         parent_count = 0
@@ -159,7 +171,7 @@ class stuff:
         for m in all_members:
             
             if m['Username'] == None:
-                print m
+                print "Missing username for:", m
                 continue
 
             collection_object = m['CollectionObject']
@@ -184,6 +196,8 @@ class stuff:
                         # add them to our list and dict
                 if this_couple not in parents:
                     parents[this_couple] = {"raw": couple}
+                    # print couple
+                    # exit()
 
             elif m['Collection'] == 'Freshers':
                 fresher = self.mg.Freshers.find_one({"_id": collection_object})
@@ -191,19 +205,53 @@ class stuff:
 
             elif m['Collection'] == 'LoneParents':
                 lone_parent = self.mg.LoneParents.find_one({"_id": collection_object})
-                print lone_parent
-                lone_parents[personid] = {'raw': lone_parent, 'interests': self.generate_interest_matrix(personid, lone_parent['person']['Interests'], dept_id)}
 
+                if match_lone_parents:
+                    lone_parents[personid] = {'raw': lone_parent, 'interests': self.generate_interest_matrix(personid, lone_parent['person']['Interests'], dept_id)}
+                else:
+                    lone_parents[personid] = {"raw": lone_parent}
+
+                # print lone_parents
+                # exit()
 
             else:
                 # They wouldn't be in either collection if they logged in
                     # but didn't actually then register (or got divorced)
                 pass
 
-        if len(parents) != parent_count/2:
-            exit('Exiting: Something has gone wrong with parent compilation')
+        if match_lone_parents:
+            print "matching %i lone parents together" % len(lone_parents)
 
-        return freshers, parents #, lone_parents
+            while (len(lone_parents) > 0):
+                scores = {}
+                for subset in itertools.combinations(lone_parents, 2):
+                    scores[subset] = numpy.dot(lone_parents[subset[0]]['interests'], lone_parents[subset[1]]['interests'])
+
+                scores = OrderedDict(sorted(scores.items(), key=lambda t: t[1])) # Let's order them, so we can match the best score
+
+                allocated = scores.popitem()
+                new_couple = allocated[0]
+
+                parents[tuple(new_couple)] = {"raw": {'person_1': lone_parents[new_couple[0]]['raw']['person'], 'person_2': lone_parents[new_couple[1]]['raw']['person']}}
+                # print parents[tuple(new_couple)]
+
+                del lone_parents[new_couple[0]]
+                del lone_parents[new_couple[1]]
+
+                if len(lone_parents) == 1:
+                    really_lone_parent = lone_parents.items()[0][0]
+
+                    print "ONE LONE PARENT REMAINING: %i. Match them with %s" % (lone_parents.items()[0][0], new_couple)
+
+                    del lone_parents[lone_parents.items()[0][0]]
+
+        # if len(parents) != parent_count/2:
+            # exit('Exiting: Something has gone wrong with parent compilation')
+
+        if return_lone_parents:
+            return freshers, parents, lone_parents
+        else:
+            return freshers, parents
 
     def list_freshers(self, dept_id):
         return self.list_all_departmental_members(dept_id)[0]
@@ -217,9 +265,10 @@ class stuff:
         families_start = {}
         # parent_count = 0
 
-        # all_members = self.mg.Metadata.find({"DepartmentId": dept_id})
+        all_members = self.mg.Metadata.find({"DepartmentId": dept_id})
 
-        freshers, parents = self.list_all_departmental_members(dept_id)
+        freshers, parents = self.list_all_departmental_members(dept_id, match_lone_parents=True)
+        
 
         for f_id, obj in freshers.iteritems():
             
